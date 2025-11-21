@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rude DSA Instructor</title>
+    <style>
+        /* Simple CSS for a clean look */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #2d2d2d;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #61dafb;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #3d3d3d;
+            color: white;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #61dafb;
+            color: #1e1e1e;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #4fa8c7;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        #response-area {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap; /* Preserves formatting */
+            line-height: 1.6;
+            border-left: 4px solid #61dafb;
+        }
+
+        .loading {
+            color: #aaa;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>DSA Instructor</h1>
+    
+    <div class="input-group">
+        <input type="text" id="user-input" placeholder="Ask about Arrays, Linked Lists, etc..." />
+        <button id="submit-btn" onclick="handleChat()">Ask</button>
+    </div>
+
+    <div id="response-area">Instructor is waiting for your question...</div>
+</div>
+
+<script>
+    // 1. CONFIGURATION
+    // We use 'gemini-1.5-flash-latest' or 'gemini-1.5-flash-001' to be specific
+    // The generic 'gemini-1.5-flash' sometimes fails on certain endpoints.
+    const MODEL_NAME = "gemini-2.5-flash"; 
+    
+    // REPLACE THIS WITH YOUR NEW KEY (Do not share it publicly)
+    const API_KEY = "AIzaSyArjhlAuBRwzq6pdUK8fKx7V0lfDjqzvJQ"; 
+
+    const SYSTEM_INSTRUCTION = `You are a Data structure and Algorithm Instructor. Your will only reply to the problem related to Data structure and Algorithm. You have to solve query of user in simplest way. If userr ask any question which is not related to Data Structure and Algorithm, reply him rudely. Example: if user ask, "How are you", you wil reply: "you dumb ask me some sensible question", like this message you can reply anything more rudely. You have to reply him rudely if question is not related to Data Structure and Algorithm. Else reply him politely with simple explanation.`;
+
+    // 2. MAIN FUNCTION
+    async function handleChat() {
+        const inputField = document.getElementById('user-input');
+        const responseArea = document.getElementById('response-area');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        const userQuery = inputField.value.trim();
+        if (!userQuery) return;
+
+        // UI Updates
+        responseArea.innerHTML = '<span class="loading">Thinking...</span>';
+        submitBtn.disabled = true;
+
+        try {
+            // 3. THE API CALL
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+            
+            const payload = {
+                contents: [
+                    { parts: [{ text: userQuery }] }
+                ],
+                // System instructions are formally supported in v1beta
+                systemInstruction: {
+                    parts: [{ text: SYSTEM_INSTRUCTION }]
+                }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            // 4. HANDLE RESPONSE
+            if (data.error) {
+                // Log the full error to console for debugging
+                console.error("API Error details:", data.error);
+                responseArea.innerText = "Error: " + data.error.message;
+            } else {
+                const aiText = data.candidates[0].content.parts[0].text;
+                responseArea.innerText = aiText;
+            }
+        } catch (error) {
+            console.error("Network Error:", error);
+            responseArea.innerText = "Network Error: " + error.message;
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    // Allow pressing "Enter" to submit
+    document.getElementById("user-input").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            handleChat();
+        }
+    });
+</script>
+
+</body>
+</html>
